@@ -11,7 +11,7 @@ router.get(
   authorize(['read']),
   async (req: AuthRequest, res) => {
     try {
-      const userId = req.user.id
+      const userId = req.user!.id
 
       const content = await prisma.content.findMany({
         where: {
@@ -37,12 +37,32 @@ router.post(
   '/',
   authenticate,
   authorize(['create']),
-  async (req, res) => {
-    const content = await prisma.content.create({
-      data: req.body
-    })
+  async (req: AuthRequest, res) => {
+    try {
+      const { title, body } = req.body as {
+        title?: string
+        body?: string
+      }
 
-    res.json(content)
+      if (!title || !body) {
+        return res.status(400).json({
+          message: 'Title and body are required'
+        })
+      }
+
+      const content = await prisma.content.create({
+        data: {
+          title,
+          body,
+          assignedTo: req.user!.id
+        }
+      })
+
+      return res.json(content)
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ message: 'Server error' })
+    }
   }
 )
 
@@ -50,15 +70,50 @@ router.put(
   '/:id',
   authenticate,
   authorize(['update']),
-  async (req, res) => {
-    const content = await prisma.content.update({
-      where: {
-        id: Number(req.params.id)
-      },
-      data: req.body
-    })
+  async (req: AuthRequest, res) => {
+    try {
+      const contentId = Number(req.params.id)
 
-    res.json(content)
+      if (Number.isNaN(contentId)) {
+        return res.status(400).json({ message: 'Invalid content id' })
+      }
+
+      const existing = await prisma.content.findUnique({
+        where: { id: contentId }
+      })
+
+      if (!existing) {
+        return res.status(404).json({ message: 'Content not found' })
+      }
+
+      if (existing.assignedTo !== req.user!.id) {
+        return res.status(403).json({ message: 'Forbidden' })
+      }
+
+      const { title, body } = req.body as {
+        title?: string
+        body?: string
+      }
+
+      if (!title && !body) {
+        return res.status(400).json({
+          message: 'At least one field is required'
+        })
+      }
+
+      const content = await prisma.content.update({
+        where: { id: contentId },
+        data: {
+          title: title ?? existing.title,
+          body: body ?? existing.body
+        }
+      })
+
+      return res.json(content)
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ message: 'Server error' })
+    }
   }
 )
 
@@ -66,14 +121,35 @@ router.delete(
   '/:id',
   authenticate,
   authorize(['delete']),
-  async (req, res) => {
-    await prisma.content.delete({
-      where: {
-        id: Number(req.params.id)
-      }
-    })
+  async (req: AuthRequest, res) => {
+    try {
+      const contentId = Number(req.params.id)
 
-    res.json({ message: 'Deleted successfully' })
+      if (Number.isNaN(contentId)) {
+        return res.status(400).json({ message: 'Invalid content id' })
+      }
+
+      const existing = await prisma.content.findUnique({
+        where: { id: contentId }
+      })
+
+      if (!existing) {
+        return res.status(404).json({ message: 'Content not found' })
+      }
+
+      if (existing.assignedTo !== req.user!.id) {
+        return res.status(403).json({ message: 'Forbidden' })
+      }
+
+      await prisma.content.delete({
+        where: { id: contentId }
+      })
+
+      return res.json({ message: 'Deleted successfully' })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ message: 'Server error' })
+    }
   }
 )
 
