@@ -11,9 +11,11 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
   const handleLogin = async () => {
     try {
+      setError('')
       const response = await api.post('/auth/login', {
         email,
         password
@@ -24,7 +26,7 @@ export default function LoginPage() {
       navigate('/content')
     } catch (error) {
       console.error(error)
-      alert('Invalid credentials')
+      setError('Invalid credentials. Please try again.')
     }
   }
 
@@ -88,6 +90,10 @@ export default function LoginPage() {
         >
           Login
         </button>
+
+        {error && (
+          <p style={{ color: 'red', marginTop: 12 }}>{error}</p>
+        )}
       </div>
 
       <div
