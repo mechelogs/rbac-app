@@ -29,6 +29,12 @@ rbac-app/
 
 ---
 
+## Screen Recording
+<video src="https://github.com/user-attachments/assets/1ce7c6c2-199c-4b23-ae0a-39171d000498"></video>
+
+<video src="https://github.com/user-attachments/assets/4a476404-2322-425c-bcd1-8e296b013a71"></video>
+
+
 ## ⚙️ Backend Setup
 
 ### 1. Install Dependencies
